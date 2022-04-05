@@ -73,7 +73,7 @@ function returnPackedIDAT(data) {
     newData.set(IDAT,4);
     newData.set(compressedData, 8);
     crc = CRC32.buf(IDAT);
-    crc = CRC32.buf(newData.slice(4, compressedData.length+8))//, crc);
+    crc = CRC32.buf(newData.slice(4, compressedData.length+8));
     var crcBytes = returnPackedInt(crc);
     newData.set(crcBytes, compressedData.length+8);
     return newData;
@@ -112,15 +112,9 @@ function random_rgb_array(width, height) {
         grr.push(0)
         for (var j = 0; j < width; j++) {
             i++;
-            derp = Math.floor(Math.random() * 254) + 1;
-            grr.push(derp);
-            i++;
-                    derp =Math.floor(Math.random() * 254) + 1;
-            grr.push(derp);
-            i++;
-                    derp = Math.floor(Math.random() * 254) + 1;
-            grr.push(derp);
-
+            r = Math.floor(Math.random() * 254) + 1; grr.push(r); i++;
+            g =Math.floor(Math.random() * 254) + 1; grr.push(g); i++;
+            b = Math.floor(Math.random() * 254) + 1; grr.push(b);
             }
         rowcount++;
     }
