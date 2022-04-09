@@ -188,30 +188,46 @@ function bytes_to_int(arr) {
 }
 
 // parse a PNG printing it's deets.
-// TODO: it only locates a single IDAT chunk.
-function parse_array(arr) {
-  // takes chunk type name. returns index and length according to png spec
-  function find_type(thistype) {
-      var i = 0;
-      // js gets mad ugly
-      tt = new Array(thistype.split('').map(c => c.charCodeAt(0)))[0];
-      console.log(thistype, tt);
-      for (i=0; i < arr.length; i+=1) {
-        if (arr[i] == tt[0] && arr[i+1] == tt[1] && arr[i+2] == tt[2] && arr[i+3] == tt[3]) {
-          console.log('found '+thistype+' at '+i+' in '+arr.length+': '+arr.slice(i,i+4));
-          thislength = bytes_to_int(arr.slice(i-4,i));
-          if (thistype == 'IHDR') {
+//a better version of previous parser.
+function parse_array_better(arr) {
+    // create dict for response
+    var response = {}; var IDAT_count = 0;
+    // crawl the array one byte at a time
+    for (var i = 0; i < arr.length; i++) {
+        // if we find an IHDR, read it
+        if (arr[i] == 73 && arr[i+1] == 72 && arr[i+2] == 68 && arr[i+3] == 82) {
+            console.log('found IHDR at '+i+' in '+arr.length+': '+arr.slice(i,i+4));
             console.log(read_IHDR(arr.slice(i+4,i+18)));
-          }
-          console.log('length: '+thislength);
-          return 'found';
-          }
-          }
-          }
-    for (var item of ['IHDR', 'IDAT', 'IEND']) {
-            find_type(item);
+            response.IHDR = read_IHDR(arr.slice(i+4,i+18));
             }
-};
+        // if we find an IDAT, read it
+        if (arr[i] == 73 && arr[i+1] == 68 && arr[i+2] == 65 && arr[i+3] == 84) {
+            IDAT_count++;
+            console.log('found IDAT at '+i+' in '+arr.length+': '+arr.slice(i,i+4));
+            // read the length of the chunk
+            var thislength = bytes_to_int(arr.slice(i-4,i));
+            // read the crc at end of chunk (4 bytes is the length of the chunk type)
+            var thiscrc = bytes_to_int(arr.slice(i+thislength+4,i+thislength+8))
+            //compute the crc of the chunk
+            var crc = CRC32.buf(arr.slice(i,i+thislength+4));
+            // add crc to response
+            response['IDAT_'+IDAT_count] = {'length': thislength, 'crc in file': thiscrc, 'crc computed': crc};
+            // if the crc matches, add the chunk to the response
+            if (crc == thiscrc) {
+                response['IDAT_'+IDAT_count]['data'] = arr.slice(i,i+thislength+4);
+                }
+            // complain if the crc doesn't match
+            else {
+                console.log('crc mismatch in chunk at '+i+' in '+arr.length+': '+thiscrc+' does not match '+crc);
+                }
+            }
+        if (arr[i] == 73 && arr[i+1] == 68 && arr[i+2] == 69 && arr[i+3] == 78) {
+            console.log('found IEND at '+i+' in '+arr.length+': '+arr.slice(i,i+4));
+            console.log(read_IHDR(arr.slice(i+4,i+18)));
+            }
+        }
+        return response;
+    }
 
 
 // takes string as input and converts to RGB array
